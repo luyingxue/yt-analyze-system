@@ -68,7 +68,11 @@ const generateAIKeywords = () => {
   return topics
     .sort(() => 0.5 - Math.random())
     .slice(0, 15)
-    .map((text) => ({ text }))
+    .map((text, index) => ({ 
+      id: index + 1,  // 添加 id
+      text,
+      value: 100 - (index * 5)  // 添加 value，用于控制字体大小
+    }))
 }
 
 // 添加 DOMRect 类型的接口
@@ -87,10 +91,6 @@ const checkCollision = (rect1: CustomRect, rect2: CustomRect): boolean => {
            rect1.top > rect2.bottom);
 };
 
-// 添加位置数组的类型
-const newPositions: Position[] = [];
-const placedRects: CustomRect[] = [];
-
 // 修改组件定义
 const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClick }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -107,6 +107,10 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
     const centerX = containerWidth / 2;
     const centerY = containerHeight / 2;
 
+    // 将位置数组移到 useEffect 内部
+    const newPositions: Position[] = [];
+    const placedRects: CustomRect[] = [];
+
     const calculateWordDimensions = (text: string, fontSize: number) => {
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
@@ -115,8 +119,8 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
       context.font = `${fontSize}px Arial`;
       const metrics = context.measureText(text);
       return {
-        width: metrics.width + 20,
-        height: fontSize * 1.5
+        width: metrics.width + 30,
+        height: fontSize * 1.8
       };
     };
 
@@ -124,8 +128,8 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
       const fontSize = minFontSize + (maxFontSize - minFontSize) * (1 - index / keywords.length);
       const { width, height } = calculateWordDimensions(keyword.text, fontSize);
       
-      let angle = index * 0.2;
-      let radius = 20;
+      let angle = index * 0.3;
+      let radius = 30;
       let attempts = 0;
       let position;
 
@@ -133,11 +137,24 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
         const x = centerX + radius * Math.cos(angle);
         const y = centerY + radius * Math.sin(angle);
         
+        const margin = 20;
+        if (
+          x - width / 2 < margin || 
+          x + width / 2 > containerWidth - margin || 
+          y - height / 2 < margin || 
+          y + height / 2 > containerHeight - margin
+        ) {
+          angle += 0.1;
+          radius += 0.8;
+          attempts++;
+          continue;
+        }
+        
         const rect = {
-          left: x - width / 2,
-          right: x + width / 2,
-          top: y - height / 2,
-          bottom: y + height / 2
+          left: x - (width / 2 + 5),
+          right: x + (width / 2 + 5),
+          top: y - (height / 2 + 5),
+          bottom: y + (height / 2 + 5)
         };
 
         if (placedRects.every(placedRect => !checkCollision(rect, placedRect))) {
@@ -146,8 +163,8 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
           break;
         }
 
-        angle += 0.03;
-        radius += 0.4;
+        angle += 0.1;
+        radius += 0.8;
         attempts++;
       }
 
@@ -162,7 +179,7 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
   return (
     <div 
       ref={containerRef} 
-      className="relative w-full h-[400px] overflow-hidden"
+      className="relative w-full h-[500px] overflow-visible"
     >
       {keywords.map((keyword, index) => {
         const position = positions[index];
@@ -174,7 +191,11 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
           <button
             key={keyword.text}
             onClick={() => onKeywordClick(keyword)}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-300 rounded-full px-3 py-1"
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 
+                      transition-all duration-300 hover:scale-110 
+                      focus:outline-none focus:ring-2 focus:ring-green-300 
+                      rounded-full px-3 py-1 cursor-pointer
+                      hover:shadow-lg active:scale-95"
             style={{
               left: `${position.x}px`,
               top: `${position.y}px`,
@@ -182,8 +203,8 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
               backgroundColor: `hsl(${hue}, 70%, 90%)`,
               color: 'hsl(160, 100%, 20%)',
               zIndex: Math.floor(position.fontSize),
-              transition: 'all 0.5s ease-in-out',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+              transition: 'all 0.3s ease-in-out',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
             }}
           >
             {keyword.text}
@@ -200,17 +221,55 @@ export default function KeywordAnalysis() {
   const [newKeyword, setNewKeyword] = useState('')
   const { toast } = useToast()
 
-  const handleDatabaseKeywordClick = (keyword: Keyword) => {
-    navigator.clipboard.writeText(keyword.text).then(() => {
+  const handleDatabaseKeywordClick = async (keyword: Keyword) => {
+    try {
+      // 首先尝试使用现代的 Clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(keyword.text);
+      } else {
+        // 后备方案：使用传统的 execCommand 方法
+        const textArea = document.createElement('textarea');
+        textArea.value = keyword.text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          textArea.remove();
+        } catch (err) {
+          console.error('Fallback: Oops, unable to copy', err);
+          throw new Error('复制失败');
+        }
+      }
+      
       toast({
-        title: "已复制关键词",
-        description: `"${keyword.text}" 已复制到剪贴板`,
-      })
-    })
+        title: "复制成功 ✨",
+        description: `关键词 "${keyword.text}" 已复制到剪贴板`,
+        variant: "default",
+      });
+    } catch (err) {
+      toast({
+        title: "复制失败",
+        description: "请手动选择并复制关键词",
+        variant: "destructive",
+      });
+      console.error('复制失败:', err);
+    }
   }
 
   const handleAIKeywordClick = (keyword: Keyword) => {
-    window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(keyword.text)}`, '_blank')
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword.text)}`
+    window.open(searchUrl, '_blank')
+    
+    // 添加点击反馈
+    toast({
+      title: "正在跳转 🚀",
+      description: `正在打开 "${keyword.text}" 的 YouTube 搜索结果`,
+      variant: "default",
+    })
   }
 
   const handleRefreshAIKeywords = () => {
@@ -257,7 +316,12 @@ export default function KeywordAnalysis() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>AI推测新关键词云</CardTitle>
-                <Button onClick={handleRefreshAIKeywords} variant="outline" className="bg-green-200 text-green-800 hover:bg-green-300" size="sm">
+                <Button 
+                  onClick={handleRefreshAIKeywords} 
+                  variant="outline" 
+                  className="bg-green-200 text-green-800 hover:bg-green-300" 
+                  size="sm"
+                >
                   刷新
                 </Button>
               </div>
@@ -288,7 +352,7 @@ export default function KeywordAnalysis() {
                 <Table key={columnIndex} className="bg-green-100">
                   <TableHeader className="bg-green-200">
                     <TableRow>
-                      <TableHead>关键词</TableHead>
+                      <TableHead>关���词</TableHead>
                       <TableHead>权重</TableHead>
                       <TableHead>操作</TableHead>
                     </TableRow>

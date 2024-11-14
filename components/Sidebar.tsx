@@ -53,19 +53,18 @@ export default function Sidebar() {
             const isActive = router.pathname === item.href
             return (
               <li key={item.href}>
-                <Link 
-                  href={item.href}
-                  className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-colors
+                <Link href={item.href}>
+                  <a className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-colors
                     ${isActive 
                       ? 'bg-green-200 text-green-900' 
                       : 'hover:bg-green-100 text-green-800'
                     }
-                  `}
-                >
-                  <span className={`mr-4 ${isActive ? 'text-green-900' : 'text-green-700'}`}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
+                  `}>
+                    <span className={`mr-4 ${isActive ? 'text-green-900' : 'text-green-700'}`}>
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </a>
                 </Link>
               </li>
             )
