@@ -1,0 +1,10 @@
+# 依赖包文件夹
+node_modules/
+# 环境变量文件
+.env
+# 编译输出目录
+dist/
+build/
+.next/
+# 日志文件
+*.log 
