@@ -1,22 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { db } from '../../../lib/db'
 
-// 定义返回数据的类型
-interface Video {
-  id: bigint;
-  video_id: string;
-  title: string;
-  view_count: number;
-  published_date: string;
+interface ChannelGroup {
   channel_id: string;
   channel_name: string;
+  video_count: number;
   canonical_base_url: string;
-  global_row_num: number;
-}
-
-// 定义计数结果的类型
-interface CountResult {
-  total: number;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -25,39 +14,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { rowStart, rowEnd } = req.query
-    const start = parseInt(rowStart as string)
-    const end = parseInt(rowEnd as string)
+    const { start, end } = req.query
+    const startRow = parseInt(start as string)
+    const endRow = parseInt(end as string)
 
-    // 使用 WITH 子句和 ROW_NUMBER 进行分组查询
-    const result = await db.query<Video[]>(`
-      WITH channel_groups AS (
-        SELECT *,
-          ROW_NUMBER() OVER (
-            ORDER BY (
-              SELECT COUNT(*) 
-              FROM videos v2 
-              WHERE v2.channel_id = v1.channel_id
-            ) DESC,
-            channel_id,
-            view_count DESC
-          ) as global_row_num
-        FROM videos v1
+    // 先获取频道分组信息
+    const result = await db.query<ChannelGroup[]>(`
+      WITH channel_stats AS (
+        SELECT 
+          channel_id,
+          channel_name,
+          canonical_base_url,
+          COUNT(*) as video_count,
+          ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) as row_num
+        FROM videos
+        GROUP BY channel_id, channel_name, canonical_base_url
       )
-      SELECT *
-      FROM channel_groups
-      WHERE global_row_num BETWEEN ? AND ?
-    `, [start, end])
+      SELECT 
+        channel_id,
+        channel_name,
+        canonical_base_url,
+        video_count
+      FROM channel_stats
+      WHERE row_num BETWEEN ? AND ?
+      ORDER BY video_count DESC
+    `, [startRow, endRow])
 
-    // 获取总数
-    const countResult = await db.query<CountResult[]>(`
+    // 获取总频道数
+    const [countResult] = await db.query<[{total: number}]>(`
       SELECT COUNT(DISTINCT channel_id) as total
       FROM videos
     `)
 
     return res.status(200).json({
       data: result,
-      total: countResult[0].total
+      total: countResult.total
     })
   } catch (error) {
     console.error('分组查询失败:', error)

@@ -7,13 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { Trash2 } from 'lucide-react'
 import { useToast } from "../components/ui/use-toast"
-import Layout from '../components/Layout'
+import { KeywordModel, Keyword } from '../lib/models/keyword'
 
-// 添加类型定义
-interface Keyword {
+// 修改 Keyword 接口
+interface KeywordDisplay {
   id?: number;
-  text: string;
-  value?: number;
+  text: string;  // 用于显示
 }
 
 interface Position {
@@ -23,56 +22,8 @@ interface Position {
 }
 
 interface SpiralTagCloudProps {
-  keywords: Keyword[];
-  onKeywordClick: (keyword: Keyword) => void;
-}
-
-// 模拟数据库中的关键词
-const initialDatabaseKeywords = [
-  { id: 1, text: 'YouTube', value: 100 },
-  { id: 2, text: 'Video', value: 95 },
-  { id: 3, text: 'Content', value: 90 },
-  { id: 4, text: 'Creator', value: 85 },
-  { id: 5, text: 'Monetization', value: 80 },
-  { id: 6, text: 'Algorithm', value: 75 },
-  { id: 7, text: 'Subscribers', value: 70 },
-  { id: 8, text: 'Engagement', value: 65 },
-  { id: 9, text: 'Trending', value: 60 },
-  { id: 10, text: 'Analytics', value: 55 },
-  { id: 11, text: 'SEO', value: 50 },
-  { id: 12, text: 'Thumbnail', value: 48 },
-  { id: 13, text: 'Viral', value: 45 },
-  { id: 14, text: 'Playlist', value: 43 },
-  { id: 15, text: 'Collaboration', value: 40 },
-  { id: 16, text: 'Niche', value: 38 },
-  { id: 17, text: 'Audience', value: 35 },
-  { id: 18, text: 'Editing', value: 33 },
-  { id: 19, text: 'Sponsorship', value: 30 },
-  { id: 20, text: 'Livestream', value: 28 },
-  { id: 21, text: 'Vlog', value: 25 },
-  { id: 22, text: 'Podcast', value: 23 },
-  { id: 23, text: 'Hashtag', value: 20 },
-  { id: 24, text: 'Copyright', value: 18 },
-  { id: 25, text: 'Branding', value: 15 },
-  { id: 26, text: 'Clickbait', value: 13 },
-  { id: 27, text: 'Subscriber', value: 10 },
-  { id: 28, text: 'Demonetized', value: 8 },
-  { id: 29, text: 'Premiere', value: 5 },
-  { id: 30, text: 'Annotation', value: 3 },
-]
-
-
-const generateAIKeywords = () => {
-  const topics = ['Shorts', 'Live Streaming', 'AI Content', 'Niche Content', 'Community', 'Storytelling', 'Cross-platform', 'Authenticity', 'Vertical Video', 'Interactive Content', 'Micro-content', 'Personalization', 'Virtual Reality', 'Augmented Reality', 'Social Commerce', 'User-generated Content', 'Influencer Marketing', 'Video SEO', 'Multi-channel Networks', 'Subscription Model']
-  
-  return topics
-    .sort(() => 0.5 - Math.random())
-    .slice(0, 15)
-    .map((text, index) => ({ 
-      id: index + 1,  // 添加 id
-      text,
-      value: 100 - (index * 5)  // 添加 value，用于控制字体大小
-    }))
+  keywords: KeywordDisplay[];
+  onKeywordClick: (keyword: KeywordDisplay) => void;
 }
 
 // 添加 DOMRect 类型的接口
@@ -91,6 +42,23 @@ const checkCollision = (rect1: CustomRect, rect2: CustomRect): boolean => {
            rect1.top > rect2.bottom);
 };
 
+// 将 generateAIKeywords 移到组件外部
+const generateAIKeywords = () => {
+  const topics = [
+    'Shorts', 'Live Streaming', 'AI Content', 'Niche Content', 'Community',
+    'Storytelling', 'Cross-platform', 'Authenticity', 'Vertical Video',
+    'Interactive Content', 'Micro-content', 'Personalization'
+  ]
+  
+  return topics
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 8)
+    .map((text, index) => ({ 
+      id: index + 1,
+      text
+    }))
+}
+
 // 修改组件定义
 const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClick }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -107,7 +75,7 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
     const centerX = containerWidth / 2;
     const centerY = containerHeight / 2;
 
-    // 将位置数组移到 useEffect 内部
+    // 将位置组移到 useEffect 内部
     const newPositions: Position[] = [];
     const placedRects: CustomRect[] = [];
 
@@ -216,51 +184,40 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
 };
 
 export default function KeywordAnalysis() {
-  const [databaseKeywords, setDatabaseKeywords] = useState(initialDatabaseKeywords)
+  const [databaseKeywords, setDatabaseKeywords] = useState<KeywordDisplay[]>([])
   const [aiKeywords, setAiKeywords] = useState(generateAIKeywords())
   const [newKeyword, setNewKeyword] = useState('')
+  const [pageSize, setPageSize] = useState(10)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
   const { toast } = useToast()
 
-  const handleDatabaseKeywordClick = async (keyword: Keyword) => {
-    try {
-      // 首先尝试使用现代的 Clipboard API
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(keyword.text);
-      } else {
-        // 后备方案：使用传统的 execCommand 方法
-        const textArea = document.createElement('textarea');
-        textArea.value = keyword.text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-          document.execCommand('copy');
-          textArea.remove();
-        } catch (err) {
-          console.error('Fallback: Oops, unable to copy', err);
-          throw new Error('复制失败');
-        }
-      }
-      
-      toast({
-        title: "复制成功 ✨",
-        description: `关键词 "${keyword.text}" 已复制到剪贴板`,
-        variant: "default",
-      });
-    } catch (err) {
-      toast({
-        title: "复制失败",
-        description: "请手动选择并复制关键词",
-        variant: "destructive",
-      });
-      console.error('复制失败:', err);
+  // 修改计算总页数的方式
+  const totalPages = Math.ceil(totalCount / pageSize)
+
+  // 修改获取当前页的关键词函数
+  const getCurrentPageKeywords = () => {
+    const currentPageData = databaseKeywords
+    const middleIndex = Math.ceil(currentPageData.length / 2)
+    
+    return {
+      leftColumn: currentPageData.slice(0, middleIndex),
+      rightColumn: currentPageData.slice(middleIndex)
     }
   }
 
-  const handleAIKeywordClick = (keyword: Keyword) => {
+  const handleDatabaseKeywordClick = (keyword: KeywordDisplay) => {
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword.text)}`
+    window.open(searchUrl, '_blank')
+    
+    toast({
+      title: "正在跳转 🚀",
+      description: `正在打开 "${keyword.text}" 的 YouTube 搜索结果`,
+      variant: "default",
+    })
+  }
+
+  const handleAIKeywordClick = (keyword: KeywordDisplay) => {
     const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword.text)}`
     window.open(searchUrl, '_blank')
     
@@ -276,112 +233,258 @@ export default function KeywordAnalysis() {
     setAiKeywords(generateAIKeywords())
   }
 
-  const handleAddKeyword = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddKeyword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!newKeyword.trim()) return
 
-    const newId = Math.max(...databaseKeywords.map(k => k.id || 0)) + 1
-    setDatabaseKeywords([
-      ...databaseKeywords,
-      { id: newId, text: newKeyword.trim(), value: 50 }
-    ])
-    setNewKeyword('')
+    try {
+      const response = await fetch('/api/keywords', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ keyWords: newKeyword.trim() }),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || '添加失败')
+      }
+      
+      await loadKeywords()
+      setNewKeyword('')
+      toast({
+        title: "添加成功",
+        description: "新关键词已添加到数据库",
+        variant: "default",
+      })
+    } catch (error: any) {
+      console.error('Failed to add keyword:', error)
+      toast({
+        title: "⚠️ 添加失败",
+        description: error.message === '关键词已存在' 
+          ? "关键词已存在，请调整" 
+          : "无法添加新关键词",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewKeyword(e.target.value)
   }
 
-  const handleDeleteKeyword = (id?: number) => {
+  const handleDeleteKeyword = async (id?: number) => {
     if (id === undefined) return
-    setDatabaseKeywords(databaseKeywords.filter(k => k.id !== id))
+
+    // 添加确认对话框
+    if (!window.confirm('确定要删除这个关键词吗？')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/keywords?id=${id}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) throw new Error('Network response was not ok')
+      await loadKeywords()
+      toast({
+        title: "删除成功",
+        description: "关键词已从数据库中删除",
+        variant: "default",
+      })
+    } catch (error) {
+      console.error('Failed to delete keyword:', error)
+      toast({
+        title: "删除失败",
+        description: "无法删除关键词",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // 添加数据加载
+  useEffect(() => {
+    loadKeywords()
+  }, [currentPage, pageSize])
+
+  const loadKeywords = async () => {
+    try {
+      const response = await fetch(`/api/keywords?page=${currentPage}&pageSize=${pageSize}`)
+      if (!response.ok) throw new Error('Network response was not ok')
+      const result = await response.json()
+      setDatabaseKeywords(result.data.map((k: any) => ({
+        id: k.id,
+        text: k.key_words
+      })))
+      setTotalCount(result.total)
+    } catch (error) {
+      console.error('Failed to load keywords:', error)
+      toast({
+        title: "加载失败",
+        description: "无法加载关键词列表",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
-    <Layout>
-      <div className="space-y-8 bg-green-50 text-green-900">
-        <h1 className="text-3xl font-bold mb-6 text-green-800">关键词分析</h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="bg-green-100">
-            <CardHeader>
-              <CardTitle>数据库关键词云</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SpiralTagCloud keywords={databaseKeywords} onKeywordClick={handleDatabaseKeywordClick} />
-            </CardContent>
-          </Card>
-
-          <Card className="bg-green-100">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>AI推测新关键词云</CardTitle>
-                <Button 
-                  onClick={handleRefreshAIKeywords} 
-                  variant="outline" 
-                  className="bg-green-200 text-green-800 hover:bg-green-300" 
-                  size="sm"
-                >
-                  刷新
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <SpiralTagCloud keywords={aiKeywords} onKeywordClick={handleAIKeywordClick} />
-            </CardContent>
-          </Card>
-        </div>
+    <div className="space-y-8 bg-green-50 text-green-900">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <Card className="bg-green-100">
+          <CardHeader>
+            <CardTitle>数据库关键词云</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SpiralTagCloud keywords={databaseKeywords} onKeywordClick={handleDatabaseKeywordClick} />
+          </CardContent>
+        </Card>
 
         <Card className="bg-green-100">
           <CardHeader>
-            <CardTitle>数据库关键词列表</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>AI推测新关键词云</CardTitle>
+              <Button 
+                onClick={handleRefreshAIKeywords} 
+                variant="outline" 
+                className="bg-green-200 text-green-800 hover:bg-green-300" 
+                size="sm"
+              >
+                刷新
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleAddKeyword} className="flex gap-2 mb-4">
-              <Input
-                type="text"
-                placeholder="输入新关键词"
-                value={newKeyword}
-                onChange={handleInputChange}
-                className="flex-grow bg-green-100 border-green-300 text-green-900"
-              />
-              <Button type="submit">添加关键词</Button>
-            </form>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[0, 1].map((columnIndex) => (
-                <Table key={columnIndex} className="bg-green-100">
-                  <TableHeader className="bg-green-200">
-                    <TableRow>
-                      <TableHead>关���词</TableHead>
-                      <TableHead>权重</TableHead>
-                      <TableHead>操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {databaseKeywords
-                      .filter((_, index) => index % 2 === columnIndex)
-                      .map((keyword) => (
-                        <TableRow key={keyword.id}>
-                          <TableCell>{keyword.text}</TableCell>
-                          <TableCell>{keyword.value}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteKeyword(keyword.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              ))}
-            </div>
+            <SpiralTagCloud keywords={aiKeywords} onKeywordClick={handleAIKeywordClick} />
           </CardContent>
         </Card>
       </div>
-    </Layout>
+
+      <Card className="bg-green-100">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>数据库关键词列表</CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="text-sm">每页显示：</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value))
+                  setCurrentPage(1)
+                }}
+                className="bg-green-50 border border-green-200 rounded px-2 py-1 text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={30}>30</option>
+              </select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAddKeyword} className="flex gap-2 mb-4">
+            <Input
+              type="text"
+              placeholder="输入新关键词"
+              value={newKeyword}
+              onChange={handleInputChange}
+              className="flex-grow bg-white border-green-300 text-green-900 focus:ring-green-200"
+            />
+            <Button 
+              type="submit" 
+              className="whitespace-nowrap min-w-[100px] bg-green-600 hover:bg-green-700"
+            >
+              添加关键词
+            </Button>
+          </form>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 左列表 */}
+            <Table className="bg-green-100">
+              <TableHeader className="bg-green-200">
+                <TableRow>
+                  <TableHead>关键词</TableHead>
+                  <TableHead>操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getCurrentPageKeywords().leftColumn.map((keyword) => (
+                  <TableRow key={keyword.id}>
+                    <TableCell>{keyword.text}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteKeyword(keyword.id)}
+                        className="hover:bg-red-100 hover:text-red-600 transition-colors"
+                        title="删除关键词"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* 右列表 */}
+            <Table className="bg-green-100">
+              <TableHeader className="bg-green-200">
+                <TableRow>
+                  <TableHead>关键词</TableHead>
+                  <TableHead>操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getCurrentPageKeywords().rightColumn.map((keyword) => (
+                  <TableRow key={keyword.id}>
+                    <TableCell>{keyword.text}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteKeyword(keyword.id)}
+                        className="hover:bg-red-100 hover:text-red-600 transition-colors"
+                        title="删除关键词"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* 分页控制 */}
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-green-700">
+              总计 {totalCount} 个关键词
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                上一页
+              </Button>
+              <span className="text-sm">
+                第 {currentPage} / {totalPages} 页
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                下一页
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
