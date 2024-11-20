@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Label } from "../../components/ui/label"
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
+import Head from 'next/head'
 
 const registrationTimeOptions = [
   { value: 30, label: '1个月内' },
@@ -50,6 +51,7 @@ interface ChannelResult {
   avg_view_count: number
   daily_view_increase: number
   crawl_date: string
+  is_benchmark: boolean
 }
 
 // 添加 handleRowClick 函数定义
@@ -151,201 +153,218 @@ export default function ChannelQuery() {
   }, []) // 只在组件挂载时执行一次初始查询
 
   return (
-    <div className="w-full p-6 space-y-8 bg-green-50 text-green-900">
-      {/* 搜索条件卡片 */}
-      <Card className="bg-green-100 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-xl text-green-800">注册时间筛选</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          <div className="space-y-6">
-            <div className="pt-6 px-2">
-              <Slider
-                id="joined-days"
-                defaultValue={[0]}
-                value={[registrationTimeOptions.findIndex(opt => opt.value === joinedDays)]}
-                onValueChange={handleJoinedDaysChange}
-                max={registrationTimeOptions.length - 1}
-                step={1}
-                className="w-full"
-              />
-              <div className="relative mt-2">
-                {registrationTimeOptions.map((option, index) => (
-                  <div
-                    key={option.value}
-                    className="absolute text-xs text-green-600 transform -translate-x-1/2"
-                    style={{
-                      left: `${(index / (registrationTimeOptions.length - 1)) * 100}%`,
-                      top: '0'
-                    }}
-                  >
-                    |
-                  </div>
-                ))}
-              </div>
-              <div className="relative mt-6">
-                {registrationTimeOptions.map((option, index) => (
-                  <div
-                    key={option.value}
-                    className="absolute text-xs text-green-600 transform -translate-x-1/2 whitespace-nowrap"
-                    style={{
-                      left: `${(index / (registrationTimeOptions.length - 1)) * 100}%`,
-                      top: '0'
-                    }}
-                  >
-                    {option.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 查询结果卡片 */}
-      <Card className="bg-green-100 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-xl text-green-800">查询结果</CardTitle>
-          <div className="flex items-center gap-4">
-            <Label htmlFor="page-size">每页显示</Label>
-            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-              <SelectTrigger id="page-size" className="w-[120px]">
-                <SelectValue placeholder="选择每页条数" />
-              </SelectTrigger>
-              <SelectContent>
-                {pageSizeOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value.toString()}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-green-200">
-                <TableRow>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-green-300 w-48"
-                    onClick={() => handleSort('channel_name')}
-                  >
-                    频道名称 {getSortIcon('channel_name')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-green-300"
-                    onClick={() => handleSort('crawl_date')}
-                  >
-                    采集日期 {getSortIcon('crawl_date')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-green-300"
-                    onClick={() => handleSort('joined_date')}
-                  >
-                    注册时间 {getSortIcon('joined_date')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-green-300"
-                    onClick={() => handleSort('country')}
-                  >
-                    国家 {getSortIcon('country')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-green-300"
-                    onClick={() => handleSort('subscriber_count')}
-                  >
-                    订阅数 {getSortIcon('subscriber_count')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-green-300"
-                    onClick={() => handleSort('video_count')}
-                  >
-                    视频数 {getSortIcon('video_count')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-green-300"
-                    onClick={() => handleSort('view_count')}
-                  >
-                    总播放量 {getSortIcon('view_count')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-green-300"
-                    onClick={() => handleSort('daily_view_increase')}
-                  >
-                    日增观看量 {getSortIcon('daily_view_increase')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-green-300"
-                    onClick={() => handleSort('avg_view_count')}
-                  >
-                    平均播放量 {getSortIcon('avg_view_count')}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {queryResults && queryResults.length > 0 ? (
-                  queryResults.map((channel) => (
-                    <TableRow 
-                      key={channel.channel_id}
-                      className="cursor-pointer hover:bg-green-200 transition-colors"
-                      onClick={() => handleRowClick(channel.channel_id)}
+    <>
+      <Head>
+        <title>YouTube分析系统</title>
+      </Head>
+      <div className="w-full p-6 space-y-8 bg-green-50 text-green-900">
+        {/* 搜索条件卡片 */}
+        <Card className="bg-green-100 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-xl text-green-800">注册时间筛选</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <div className="space-y-6">
+              <div className="pt-6 px-2">
+                <Slider
+                  id="joined-days"
+                  defaultValue={[0]}
+                  value={[registrationTimeOptions.findIndex(opt => opt.value === joinedDays)]}
+                  onValueChange={handleJoinedDaysChange}
+                  max={registrationTimeOptions.length - 1}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="relative mt-2">
+                  {registrationTimeOptions.map((option, index) => (
+                    <div
+                      key={option.value}
+                      className="absolute text-xs text-green-600 transform -translate-x-1/2"
+                      style={{
+                        left: `${(index / (registrationTimeOptions.length - 1)) * 100}%`,
+                        top: '0'
+                      }}
                     >
-                      <TableCell className="font-medium truncate max-w-[12rem]">
-                        <div className="truncate" title={channel.channel_name}>
-                          {channel.channel_name || '-'}
-                        </div>
-                      </TableCell>
-                      <TableCell>{channel.crawl_date ? new Date(channel.crawl_date).toLocaleDateString() : '-'}</TableCell>
-                      <TableCell>{channel.joined_date ? new Date(channel.joined_date).toLocaleDateString() : '-'}</TableCell>
-                      <TableCell>{channel.country || '-'}</TableCell>
-                      <TableCell>{channel.subscriber_count?.toLocaleString() || '-'}</TableCell>
-                      <TableCell>{channel.video_count?.toLocaleString() || '-'}</TableCell>
-                      <TableCell>{channel.view_count?.toLocaleString() || '-'}</TableCell>
-                      <TableCell>{channel.daily_view_increase?.toLocaleString() || '-'}</TableCell>
-                      <TableCell>{channel.avg_view_count?.toLocaleString() || '-'}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4">
-                      暂无数据
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                      |
+                    </div>
+                  ))}
+                </div>
+                <div className="relative mt-6">
+                  {registrationTimeOptions.map((option, index) => (
+                    <div
+                      key={option.value}
+                      className="absolute text-xs text-green-600 transform -translate-x-1/2 whitespace-nowrap"
+                      style={{
+                        left: `${(index / (registrationTimeOptions.length - 1)) * 100}%`,
+                        top: '0'
+                      }}
+                    >
+                      {option.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* 分页控件 */}
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-green-700">
-              共 {totalCount} 条记录
+        {/* 查询结果卡片 */}
+        <Card className="bg-green-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-xl text-green-800">查询结果</CardTitle>
+            <div className="flex items-center gap-4">
+              <Label htmlFor="page-size">每页显示</Label>
+              <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                <SelectTrigger id="page-size" className="w-[120px]">
+                  <SelectValue placeholder="选择每页条数" />
+                </SelectTrigger>
+                <SelectContent>
+                  {pageSizeOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value.toString()}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                上一页
-              </Button>
-              <span className="text-sm text-green-700">
-                第 {currentPage} 页
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage * pageSize >= totalCount}
-              >
-                下一页
-              </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-green-200">
+                  <TableRow>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-green-300 w-48"
+                      onClick={() => handleSort('channel_name')}
+                    >
+                      频道名称 {getSortIcon('channel_name')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-green-300"
+                      onClick={() => handleSort('crawl_date')}
+                    >
+                      采集日期 {getSortIcon('crawl_date')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-green-300"
+                      onClick={() => handleSort('joined_date')}
+                    >
+                      注册时间 {getSortIcon('joined_date')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-green-300"
+                      onClick={() => handleSort('country')}
+                    >
+                      国家 {getSortIcon('country')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-green-300"
+                      onClick={() => handleSort('subscriber_count')}
+                    >
+                      订阅数 {getSortIcon('subscriber_count')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-green-300"
+                      onClick={() => handleSort('video_count')}
+                    >
+                      视频数 {getSortIcon('video_count')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-green-300"
+                      onClick={() => handleSort('view_count')}
+                    >
+                      总播放量 {getSortIcon('view_count')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-green-300"
+                      onClick={() => handleSort('daily_view_increase')}
+                    >
+                      日增观看量 {getSortIcon('daily_view_increase')}
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-green-300"
+                      onClick={() => handleSort('avg_view_count')}
+                    >
+                      平均播放量 {getSortIcon('avg_view_count')}
+                    </TableHead>
+                    <TableHead>
+                      对标状态
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {queryResults && queryResults.length > 0 ? (
+                    queryResults.map((channel) => (
+                      <TableRow 
+                        key={channel.channel_id}
+                        className="cursor-pointer hover:bg-green-200 transition-colors"
+                        onClick={() => handleRowClick(channel.channel_id)}
+                      >
+                        <TableCell className="font-medium truncate max-w-[12rem]">
+                          <div className="truncate" title={channel.channel_name}>
+                            {channel.channel_name || '-'}
+                          </div>
+                        </TableCell>
+                        <TableCell>{channel.crawl_date ? new Date(channel.crawl_date).toLocaleDateString() : '-'}</TableCell>
+                        <TableCell>{channel.joined_date ? new Date(channel.joined_date).toLocaleDateString() : '-'}</TableCell>
+                        <TableCell>{channel.country || '-'}</TableCell>
+                        <TableCell>{channel.subscriber_count?.toLocaleString() || '-'}</TableCell>
+                        <TableCell>{channel.video_count?.toLocaleString() || '-'}</TableCell>
+                        <TableCell>{channel.view_count?.toLocaleString() || '-'}</TableCell>
+                        <TableCell>{channel.daily_view_increase?.toLocaleString() || '-'}</TableCell>
+                        <TableCell>{channel.avg_view_count?.toLocaleString() || '-'}</TableCell>
+                        <TableCell>
+                          {channel.is_benchmark ? (
+                            <img
+                              src="/images/icons/benchmark-active.png"
+                              alt="对标频道"
+                              className="h-6 w-auto"
+                            />
+                          ) : null}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center py-4">
+                        暂无数据
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+
+            {/* 分页控件 */}
+            <div className="mt-4 flex items-center justify-between">
+              <div className="text-sm text-green-700">
+                共 {totalCount} 条记录
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  上一页
+                </Button>
+                <span className="text-sm text-green-700">
+                  第 {currentPage} 页
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage * pageSize >= totalCount}
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   )
 }

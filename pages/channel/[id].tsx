@@ -16,6 +16,7 @@ import {
   Legend
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
+import Head from 'next/head'
 
 interface ChannelData {
   channel_id: string
@@ -255,26 +256,49 @@ export default function ChannelDetail() {
   }
 
   return (
-    <div className="w-full p-6 space-y-8 bg-green-50 text-green-900">
-      {/* 基本信息卡片 */}
-      <Card className="bg-green-100 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div className="flex items-center gap-6">
-            <CardTitle className="text-xl text-green-800">频道基本信息</CardTitle>
-            <button
-              onClick={toggleBenchmark}
-              disabled={isUpdating}
-              className={`transition-colors ${
-                isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'
-              }`}
-              title={isBenchmark ? '取消对标频道' : '设为对标频道'}
-            >
-              <img
-                src={`/images/icons/${isBenchmark ? 'benchmark-active.png' : 'benchmark-inactive.png'}`}
-                alt={isBenchmark ? '取消对标频道' : '设为对标频道'}
-                className="w-[114.5px] h-[27px]"
-              />
-            </button>
+    <>
+      <Head>
+        <title>频道详情 - YouTube分析系统</title>
+      </Head>
+      <div className="w-full p-6 space-y-8 bg-green-50 text-green-900">
+        {/* 基本信息卡片 */}
+        <Card className="bg-green-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-xl text-green-800">频道详细数据</CardTitle>
+              <button
+                onClick={toggleBenchmark}
+                disabled={isUpdating}
+                className={`transition-colors ${
+                  isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'
+                }`}
+                title={isBenchmark ? '取消对标频道' : '设为对标频道'}
+              >
+                <img
+                  src={`/images/icons/${isBenchmark ? 'benchmark-active.png' : 'benchmark-inactive.png'}`}
+                  alt={isBenchmark ? '取消对标频道' : '设为对标频道'}
+                  className="w-[114.5px] h-[27px]"
+                />
+              </button>
+              <a
+                href="https://ytlarge.com/youtube/monetization-checker/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cursor-pointer hover:opacity-80"
+                onClick={(e) => {
+                  // 复制频道链接到剪贴板
+                  navigator.clipboard.writeText(
+                    `https://www.youtube.com${latestData.canonical_base_url}/shorts`
+                  )
+                }}
+              >
+                <img
+                  src="/images/icons/ytlarge.png"
+                  alt="YT Large"
+                  className="w-[114.5px] h-[27px]"
+                />
+              </a>
+            </div>
             <button
               onClick={handleBlacklist}
               className="cursor-pointer hover:opacity-80"
@@ -286,146 +310,154 @@ export default function ChannelDetail() {
                 className="w-[114.5px] h-[27px]"
               />
             </button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 bg-green-200/50 rounded-lg">
-              <h3 className="text-sm font-semibold text-green-700 mb-2">频道名称</h3>
-              <p className="text-lg text-green-900">{latestData.channel_name}</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-4 bg-green-200/50 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-700 mb-2">频道名称</h3>
+                <p className="text-lg text-green-900">{latestData.channel_name}</p>
+              </div>
+              <div className="p-4 bg-green-200/50 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-700 mb-2">频道ID</h3>
+                <p className="text-lg text-green-900">{latestData.channel_id}</p>
+              </div>
+              <div className="p-4 bg-green-200/50 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-700 mb-2">频道链接</h3>
+                <a 
+                  href={`https://www.youtube.com${latestData.canonical_base_url}/shorts`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-lg text-green-600 hover:text-green-700 break-all"
+                >
+                  {`https://www.youtube.com${latestData.canonical_base_url}/shorts`}
+                </a>
+              </div>
+              <div className="p-4 bg-green-200/50 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-700 mb-2">所属国家</h3>
+                <p className="text-lg text-green-900">{latestData.country || '-'}</p>
+              </div>
+              <div className="p-4 bg-green-200/50 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-700 mb-2">加入日期</h3>
+                <p className="text-lg text-green-900">{new Date(latestData.joined_date).toLocaleDateString()}</p>
+              </div>
+              <div className="p-4 bg-green-200/50 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-700 mb-2">数据更新日期</h3>
+                <p className="text-lg text-green-900">{new Date(latestData.crawl_date).toLocaleDateString()}</p>
+              </div>
             </div>
-            <div className="p-4 bg-green-200/50 rounded-lg">
-              <h3 className="text-sm font-semibold text-green-700 mb-2">频道ID</h3>
-              <p className="text-lg text-green-900">{latestData.channel_id}</p>
+            
+            <div className="mt-6 p-4 bg-green-200/50 rounded-lg">
+              <h3 className="text-sm font-semibold text-green-700 mb-2">频道描述</h3>
+              <p className="text-green-900 whitespace-pre-wrap">{latestData.description}</p>
             </div>
-            <div className="p-4 bg-green-200/50 rounded-lg">
-              <h3 className="text-sm font-semibold text-green-700 mb-2">频道链接</h3>
-              <a 
-                href={`https://www.youtube.com${latestData.canonical_base_url}/shorts`}
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-lg text-green-600 hover:text-green-700 break-all"
-              >
-                {`https://www.youtube.com${latestData.canonical_base_url}/shorts`}
-              </a>
-            </div>
-            <div className="p-4 bg-green-200/50 rounded-lg">
-              <h3 className="text-sm font-semibold text-green-700 mb-2">所属国家</h3>
-              <p className="text-lg text-green-900">{latestData.country || '-'}</p>
-            </div>
-            <div className="p-4 bg-green-200/50 rounded-lg">
-              <h3 className="text-sm font-semibold text-green-700 mb-2">加入日期</h3>
-              <p className="text-lg text-green-900">{new Date(latestData.joined_date).toLocaleDateString()}</p>
-            </div>
-            <div className="p-4 bg-green-200/50 rounded-lg">
-              <h3 className="text-sm font-semibold text-green-700 mb-2">数据更新日期</h3>
-              <p className="text-lg text-green-900">{new Date(latestData.crawl_date).toLocaleDateString()}</p>
-            </div>
-          </div>
-          
-          <div className="mt-6 p-4 bg-green-200/50 rounded-lg">
-            <h3 className="text-sm font-semibold text-green-700 mb-2">频道描述</h3>
-            <p className="text-green-900 whitespace-pre-wrap">{latestData.description}</p>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* 数据分析卡片 */}
-      <Card className="bg-green-100 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-xl text-green-800">最新数据分析</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 左侧数据 */}
-            <div className="p-4 bg-green-200 rounded-lg space-y-2">
-              <p>视频数：{latestData.video_count?.toLocaleString() || '-'}</p>
-              <p>订阅数：{latestData.subscriber_count?.toLocaleString() || '-'}</p>
-              <p>总播放量：{latestData.view_count?.toLocaleString() || '-'}</p>
-            </div>
+        {/* 数据分析卡片 */}
+        <Card className="bg-green-100 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-xl text-green-800">最新数据分析</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 左侧数据 */}
+              <div className="p-4 bg-green-200 rounded-lg space-y-2">
+                <p>视频数：{latestData.video_count?.toLocaleString() || '-'}</p>
+                <p>订阅数：{latestData.subscriber_count?.toLocaleString() || '-'}</p>
+                <p>总播放量：{latestData.view_count?.toLocaleString() || '-'}</p>
+              </div>
 
-            {/* 右侧数据 */}
-            <div className="p-4 bg-green-200 rounded-lg space-y-2">
-              <p>昨日新增观看量：{latestData.daily_view_increase?.toLocaleString() || '-'}</p>
-              <p>平均每视频播放量：{latestData.avg_view_count?.toLocaleString() || '-'}</p>
-              <p>平均每视频订阅增长：{latestData.avg_subscriber_increase?.toLocaleString() || '-'}</p>
+              {/* 右侧数据 */}
+              <div className="p-4 bg-green-200 rounded-lg space-y-2">
+                <p>昨日新增观看量：{latestData.daily_view_increase?.toLocaleString() || '-'}</p>
+                <p>平均每视频播放量：{latestData.avg_view_count?.toLocaleString() || '-'}</p>
+                <p>平均每视频订阅增长：{latestData.avg_subscriber_increase?.toLocaleString() || '-'}</p>
+                <p>平均每日更新数量：{
+                  latestData.joined_date ? (
+                    (latestData.video_count / (
+                      (new Date(latestData.crawl_date).getTime() - new Date(latestData.joined_date).getTime()) / 
+                      (1000 * 60 * 60 * 24)
+                    )).toFixed(2)
+                  ) : '-'
+                }</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* 历史数据表格 */}
-      <Card className="bg-green-100 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-xl text-green-800">历史数据</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-green-200">
-                <TableRow>
-                  <TableHead>采集日期</TableHead>
-                  <TableHead>订阅数</TableHead>
-                  <TableHead>视频数</TableHead>
-                  <TableHead>总播放量</TableHead>
-                  <TableHead>日增观看量</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {channelData.map((data, index) => (
-                  <TableRow key={data.crawl_date}>
-                    <TableCell>{new Date(data.crawl_date).toLocaleDateString()}</TableCell>
-                    <TableCell>{data.subscriber_count?.toLocaleString() || '-'}</TableCell>
-                    <TableCell>{data.video_count?.toLocaleString() || '-'}</TableCell>
-                    <TableCell>{data.view_count?.toLocaleString() || '-'}</TableCell>
-                    <TableCell>{data.daily_view_increase?.toLocaleString() || '-'}</TableCell>
+        {/* 历史数据表格 */}
+        <Card className="bg-green-100 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-xl text-green-800">历史数据</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-green-200">
+                  <TableRow>
+                    <TableHead>采集日期</TableHead>
+                    <TableHead>订阅数</TableHead>
+                    <TableHead>视频数</TableHead>
+                    <TableHead>总播放量</TableHead>
+                    <TableHead>日增观看量</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {channelData.map((data, index) => (
+                    <TableRow key={data.crawl_date}>
+                      <TableCell>{new Date(data.crawl_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{data.subscriber_count?.toLocaleString() || '-'}</TableCell>
+                      <TableCell>{data.video_count?.toLocaleString() || '-'}</TableCell>
+                      <TableCell>{data.view_count?.toLocaleString() || '-'}</TableCell>
+                      <TableCell>{data.daily_view_increase?.toLocaleString() || '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* 趋势图卡片 */}
-      <Card className="bg-green-100 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-xl text-green-800">数据趋势</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-8">
-            <div className="p-4 bg-green-200/50 rounded-lg">
-              <h3 className="text-sm font-semibold text-green-700 mb-4">订阅数趋势</h3>
-              <div className="h-[300px]">
-                <Line 
-                  options={subscriberChartOptions} 
-                  data={subscriberChartData}
-                />
+        {/* 趋势图卡片 */}
+        <Card className="bg-green-100 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-xl text-green-800">数据趋势</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-8">
+              <div className="p-4 bg-green-200/50 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-700 mb-4">订阅数趋势</h3>
+                <div className="h-[300px]">
+                  <Line 
+                    options={subscriberChartOptions} 
+                    data={subscriberChartData}
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 bg-green-200/50 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-700 mb-4">视频数趋势</h3>
+                <div className="h-[300px]">
+                  <Line 
+                    options={videoChartOptions} 
+                    data={videoChartData}
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 bg-green-200/50 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-700 mb-4">总播放量趋势</h3>
+                <div className="h-[300px]">
+                  <Line 
+                    options={viewChartOptions} 
+                    data={viewChartData}
+                  />
+                </div>
               </div>
             </div>
-
-            <div className="p-4 bg-green-200/50 rounded-lg">
-              <h3 className="text-sm font-semibold text-green-700 mb-4">视频数趋势</h3>
-              <div className="h-[300px]">
-                <Line 
-                  options={videoChartOptions} 
-                  data={videoChartData}
-                />
-              </div>
-            </div>
-
-            <div className="p-4 bg-green-200/50 rounded-lg">
-              <h3 className="text-sm font-semibold text-green-700 mb-4">总播放量趋势</h3>
-              <div className="h-[300px]">
-                <Line 
-                  options={viewChartOptions} 
-                  data={viewChartData}
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   )
 } 

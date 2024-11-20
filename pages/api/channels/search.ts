@@ -12,6 +12,7 @@ interface ChannelResult {
   avg_view_count: number
   daily_view_increase: number
   crawl_date: string
+  is_benchmark: boolean
 }
 
 interface SearchParams {
@@ -94,13 +95,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         c1.country,
         c1.avg_view_count,
         c1.daily_view_increase,
-        c1.crawl_date
+        c1.crawl_date,
+        cb.is_benchmark
       FROM channel_crawl c1
       INNER JOIN (
         SELECT channel_id, MAX(crawl_date) as latest_date
         FROM channel_crawl
         GROUP BY channel_id
       ) c2 ON c1.channel_id = c2.channel_id AND c1.crawl_date = c2.latest_date
+      LEFT JOIN channel_base cb ON c1.channel_id = cb.channel_id
       ${whereClause}
       ORDER BY ${sort.field} ${sort.direction}
       LIMIT ${pageSize} OFFSET ${offset}
