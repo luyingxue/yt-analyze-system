@@ -185,6 +185,7 @@ const SpiralTagCloud: React.FC<SpiralTagCloudProps> = ({ keywords, onKeywordClic
 
 export default function KeywordAnalysis() {
   const [databaseKeywords, setDatabaseKeywords] = useState<KeywordDisplay[]>([])
+  const [allKeywords, setAllKeywords] = useState<KeywordDisplay[]>([])
   const [aiKeywords, setAiKeywords] = useState(generateAIKeywords())
   const [newKeyword, setNewKeyword] = useState('')
   const [pageSize, setPageSize] = useState(10)
@@ -252,6 +253,7 @@ export default function KeywordAnalysis() {
       }
       
       await loadKeywords()
+      await loadAllKeywords()
       setNewKeyword('')
       toast({
         title: "添加成功",
@@ -276,11 +278,7 @@ export default function KeywordAnalysis() {
 
   const handleDeleteKeyword = async (id?: number) => {
     if (id === undefined) return
-
-    // 添加确认对话框
-    if (!window.confirm('确定要删除这个关键词吗？')) {
-      return
-    }
+    if (!window.confirm('确定要删除这个关键词吗？')) return
 
     try {
       const response = await fetch(`/api/keywords?id=${id}`, {
@@ -288,6 +286,7 @@ export default function KeywordAnalysis() {
       })
       if (!response.ok) throw new Error('Network response was not ok')
       await loadKeywords()
+      await loadAllKeywords()
       toast({
         title: "删除成功",
         description: "关键词已从数据库中删除",
@@ -303,9 +302,30 @@ export default function KeywordAnalysis() {
     }
   }
 
-  // 添加数据加载
+  // 添加加载所有关键词的函数
+  const loadAllKeywords = async () => {
+    try {
+      const response = await fetch('/api/keywords/all')
+      if (!response.ok) throw new Error('Network response was not ok')
+      const result = await response.json()
+      setAllKeywords(result.map((k: any) => ({
+        id: k.id,
+        text: k.key_words
+      })))
+    } catch (error) {
+      console.error('Failed to load all keywords:', error)
+      toast({
+        title: "加载失败",
+        description: "无法加载完整关键词列表",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // 修改 useEffect，同时加载分页数据和所有数据
   useEffect(() => {
     loadKeywords()
+    loadAllKeywords()
   }, [currentPage, pageSize])
 
   const loadKeywords = async () => {
@@ -336,7 +356,10 @@ export default function KeywordAnalysis() {
             <CardTitle>数据库关键词云</CardTitle>
           </CardHeader>
           <CardContent>
-            <SpiralTagCloud keywords={databaseKeywords} onKeywordClick={handleDatabaseKeywordClick} />
+            <SpiralTagCloud 
+              keywords={allKeywords}
+              onKeywordClick={handleDatabaseKeywordClick} 
+            />
           </CardContent>
         </Card>
 
