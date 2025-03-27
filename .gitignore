@@ -1,7 +1,7 @@
 # 依赖包文件夹
 node_modules/
 # 环境变量文件
-.env
+.env.local
 # 编译输出目录
 dist/
 build/
